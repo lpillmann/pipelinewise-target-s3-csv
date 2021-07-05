@@ -109,7 +109,7 @@ def flatten_record(d, parent_key=[], sep='__'):
     """
     """
     items = []
-    for k in sorted(d.keys()):
+    for k in d.keys():
         v = d[k]
         new_key = flatten_key(k, parent_key, sep)
         if isinstance(v, collections.MutableMapping):
