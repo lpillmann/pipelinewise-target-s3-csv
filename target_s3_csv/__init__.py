@@ -133,15 +133,17 @@ def persist_messages(messages, config, s3_client):
 
     # Upload created CSV files to S3
     for filename, target_key in filenames:
-        compressed_file = None
+        compressed_filename = None
+        compressed_target_key = None
         if config.get("compression") is None or config["compression"].lower() == "none":
             pass  # no compression
         else:
             if config["compression"] == "gzip":
-                compressed_file = f"{filename}.gz"
+                compressed_filename = filename + ".gz"
+                compressed_target_key = target_key + ".gz"
                 with open(filename, 'rb') as f_in:
-                    with gzip.open(compressed_file, 'wb') as f_out:
-                        logger.info(f"Compressing file as '{compressed_file}'")
+                    with gzip.open(compressed_filename, 'wb') as f_out:
+                        logger.info(f"Compressing file as '{compressed_filename}'")
                         shutil.copyfileobj(f_in, f_out)
             else:
                 raise NotImplementedError(
@@ -149,17 +151,17 @@ def persist_messages(messages, config, s3_client):
                     "Expected: 'none' or 'gzip'"
                     .format(config["compression"])
                 )
-        s3.upload_file(compressed_file or filename,
+        s3.upload_file(compressed_filename or filename,
                        s3_client,
                        config.get('s3_bucket'),
-                       target_key,
+                       compressed_target_key or target_key,
                        encryption_type=config.get('encryption_type'),
                        encryption_key=config.get('encryption_key'))
 
         # Remove the local file(s)
         os.remove(filename)
-        if compressed_file:
-            os.remove(compressed_file)
+        if compressed_filename:
+            os.remove(compressed_filename)
 
     return state
 
